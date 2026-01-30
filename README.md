@@ -1,6 +1,11 @@
-# Payload Blank Template
+# Riot
 
-This template comes configured with the bare minimum to get started on anything you need.
+This project serves as a backend framework for the Riot Events application.
+
+Its responsibilties include:
+- content management for curators
+- event ingestion and AI augmentation 
+- enduser sessions
 
 ## Quick start
 
