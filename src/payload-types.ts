@@ -69,6 +69,9 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    events: Event;
+    venues: Venue;
+    categories: Category;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,6 +81,9 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    events: EventsSelect<false> | EventsSelect<true>;
+    venues: VenuesSelect<false> | VenuesSelect<true>;
+    categories: CategoriesSelect<false> | CategoriesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -122,6 +128,13 @@ export interface UserAuthOperations {
  */
 export interface User {
   id: number;
+  firstName?: string | null;
+  lastName?: string | null;
+  avatar?: (number | null) | Media;
+  /**
+   * User roles determine access permissions
+   */
+  roles: ('admin' | 'editor' | 'attendee')[];
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -146,7 +159,22 @@ export interface User {
  */
 export interface Media {
   id: number;
+  /**
+   * Alternative text for accessibility
+   */
   alt: string;
+  /**
+   * Image caption for display
+   */
+  caption?: string | null;
+  /**
+   * Attribution/source credit
+   */
+  credit?: string | null;
+  /**
+   * Tags for organization and AI tagging
+   */
+  tags?: string[] | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -158,6 +186,196 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    feature?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events".
+ */
+export interface Event {
+  id: number;
+  title: string;
+  slug?: string | null;
+  featuredImage?: (number | null) | Media;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Event type
+   */
+  isVirtual?: boolean | null;
+  /**
+   * URL to join the virtual event
+   */
+  virtualUrl?: string | null;
+  startDateTime: string;
+  endDateTime?: string | null;
+  isAllDay?: boolean | null;
+  /**
+   * IANA timezone (e.g. America/Halifax)
+   */
+  timezone?: string | null;
+  /**
+   * Event location
+   */
+  venue?: (number | null) | Venue;
+  /**
+   * External event link (Facebook, Eventbrite, etc.)
+   */
+  website?: string | null;
+  /**
+   * Event categories
+   */
+  categories?: (number | Category)[] | null;
+  status?: ('draft' | 'published' | 'cancelled' | 'postponed') | null;
+  /**
+   * Feature this event on the homepage
+   */
+  featured?: boolean | null;
+  createdBy?: (number | null) | User;
+  /**
+   * WordPress sync metadata
+   */
+  sync?: {
+    source?: ('manual' | 'wordpress') | null;
+    /**
+     * WordPress event ID
+     */
+    externalId?: string | null;
+    lastSyncedAt?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "venues".
+ */
+export interface Venue {
+  id: number;
+  name: string;
+  slug?: string | null;
+  description?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  address?: {
+    street?: string | null;
+    city?: string | null;
+    /**
+     * Province/State
+     */
+    state?: string | null;
+    /**
+     * Postal/ZIP code
+     */
+    zip?: string | null;
+    country?: string | null;
+  };
+  /**
+   * Geographic coordinates for mapping
+   *
+   * @minItems 2
+   * @maxItems 2
+   */
+  coordinates?: [number, number] | null;
+  website?: string | null;
+  phone?: string | null;
+  /**
+   * Maximum venue capacity (manual entry)
+   */
+  capacity?: number | null;
+  image?: (number | null) | Media;
+  /**
+   * WordPress sync metadata
+   */
+  sync?: {
+    /**
+     * WordPress venue ID
+     */
+    externalId?: string | null;
+    lastSyncedAt?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories".
+ */
+export interface Category {
+  id: number;
+  name: string;
+  slug?: string | null;
+  description?: string | null;
+  /**
+   * Hex color code for UI display (e.g. #FF5733)
+   */
+  color?: string | null;
+  /**
+   * Parent category for hierarchical structure
+   */
+  parent?: (number | null) | Category;
+  /**
+   * WordPress sync metadata
+   */
+  sync?: {
+    /**
+     * WordPress term ID
+     */
+    externalId?: string | null;
+    lastSyncedAt?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -190,6 +408,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'events';
+        value: number | Event;
+      } | null)
+    | ({
+        relationTo: 'venues';
+        value: number | Venue;
+      } | null)
+    | ({
+        relationTo: 'categories';
+        value: number | Category;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -238,6 +468,10 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  firstName?: T;
+  lastName?: T;
+  avatar?: T;
+  roles?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -261,6 +495,9 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  caption?: T;
+  credit?: T;
+  tags?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -272,6 +509,121 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        card?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        feature?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "events_select".
+ */
+export interface EventsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  featuredImage?: T;
+  description?: T;
+  isVirtual?: T;
+  virtualUrl?: T;
+  startDateTime?: T;
+  endDateTime?: T;
+  isAllDay?: T;
+  timezone?: T;
+  venue?: T;
+  website?: T;
+  categories?: T;
+  status?: T;
+  featured?: T;
+  createdBy?: T;
+  sync?:
+    | T
+    | {
+        source?: T;
+        externalId?: T;
+        lastSyncedAt?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "venues_select".
+ */
+export interface VenuesSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  description?: T;
+  address?:
+    | T
+    | {
+        street?: T;
+        city?: T;
+        state?: T;
+        zip?: T;
+        country?: T;
+      };
+  coordinates?: T;
+  website?: T;
+  phone?: T;
+  capacity?: T;
+  image?: T;
+  sync?:
+    | T
+    | {
+        externalId?: T;
+        lastSyncedAt?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "categories_select".
+ */
+export interface CategoriesSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  description?: T;
+  color?: T;
+  parent?: T;
+  sync?:
+    | T
+    | {
+        externalId?: T;
+        lastSyncedAt?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
