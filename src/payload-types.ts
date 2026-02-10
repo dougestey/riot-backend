@@ -59,281 +59,283 @@ export type SupportedTimezones =
   | 'Pacific/Guam'
   | 'Pacific/Noumea'
   | 'Pacific/Auckland'
-  | 'Pacific/Fiji';
+  | 'Pacific/Fiji'
 
 export interface Config {
   auth: {
-    users: UserAuthOperations;
-  };
-  blocks: {};
+    users: UserAuthOperations
+  }
+  blocks: {}
   collections: {
-    users: User;
-    media: Media;
-    events: Event;
-    venues: Venue;
-    categories: Category;
-    'payload-kv': PayloadKv;
-    'payload-locked-documents': PayloadLockedDocument;
-    'payload-preferences': PayloadPreference;
-    'payload-migrations': PayloadMigration;
-  };
-  collectionsJoins: {};
+    users: User
+    media: Media
+    events: Event
+    venues: Venue
+    categories: Category
+    'payload-kv': PayloadKv
+    'payload-locked-documents': PayloadLockedDocument
+    'payload-preferences': PayloadPreference
+    'payload-migrations': PayloadMigration
+  }
+  collectionsJoins: {}
   collectionsSelect: {
-    users: UsersSelect<false> | UsersSelect<true>;
-    media: MediaSelect<false> | MediaSelect<true>;
-    events: EventsSelect<false> | EventsSelect<true>;
-    venues: VenuesSelect<false> | VenuesSelect<true>;
-    categories: CategoriesSelect<false> | CategoriesSelect<true>;
-    'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
-    'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
-    'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
-    'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
-  };
+    users: UsersSelect<false> | UsersSelect<true>
+    media: MediaSelect<false> | MediaSelect<true>
+    events: EventsSelect<false> | EventsSelect<true>
+    venues: VenuesSelect<false> | VenuesSelect<true>
+    categories: CategoriesSelect<false> | CategoriesSelect<true>
+    'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>
+    'payload-locked-documents':
+      | PayloadLockedDocumentsSelect<false>
+      | PayloadLockedDocumentsSelect<true>
+    'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>
+    'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>
+  }
   db: {
-    defaultIDType: number;
-  };
-  fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
-  locale: null;
+    defaultIDType: number
+  }
+  fallbackLocale: null
+  globals: {}
+  globalsSelect: {}
+  locale: null
   user: User & {
-    collection: 'users';
-  };
+    collection: 'users'
+  }
   jobs: {
-    tasks: unknown;
-    workflows: unknown;
-  };
+    tasks: unknown
+    workflows: unknown
+  }
 }
 export interface UserAuthOperations {
   forgotPassword: {
-    email: string;
-    password: string;
-  };
+    email: string
+    password: string
+  }
   login: {
-    email: string;
-    password: string;
-  };
+    email: string
+    password: string
+  }
   registerFirstUser: {
-    email: string;
-    password: string;
-  };
+    email: string
+    password: string
+  }
   unlock: {
-    email: string;
-    password: string;
-  };
+    email: string
+    password: string
+  }
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users".
  */
 export interface User {
-  id: number;
-  firstName?: string | null;
-  lastName?: string | null;
-  avatar?: (number | null) | Media;
+  id: number
+  firstName?: string | null
+  lastName?: string | null
+  avatar?: (number | null) | Media
   /**
    * User roles determine access permissions
    */
-  roles: ('admin' | 'editor' | 'attendee')[];
-  updatedAt: string;
-  createdAt: string;
-  email: string;
-  resetPasswordToken?: string | null;
-  resetPasswordExpiration?: string | null;
-  salt?: string | null;
-  hash?: string | null;
-  loginAttempts?: number | null;
-  lockUntil?: string | null;
+  roles: ('admin' | 'editor' | 'attendee')[]
+  updatedAt: string
+  createdAt: string
+  email: string
+  resetPasswordToken?: string | null
+  resetPasswordExpiration?: string | null
+  salt?: string | null
+  hash?: string | null
+  loginAttempts?: number | null
+  lockUntil?: string | null
   sessions?:
     | {
-        id: string;
-        createdAt?: string | null;
-        expiresAt: string;
+        id: string
+        createdAt?: string | null
+        expiresAt: string
       }[]
-    | null;
-  password?: string | null;
+    | null
+  password?: string | null
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
-  id: number;
+  id: number
   /**
    * Alternative text for accessibility
    */
-  alt: string;
+  alt: string
   /**
    * Image caption for display
    */
-  caption?: string | null;
+  caption?: string | null
   /**
    * Attribution/source credit
    */
-  credit?: string | null;
+  credit?: string | null
   /**
    * Tags for organization and AI tagging
    */
-  tags?: string[] | null;
-  updatedAt: string;
-  createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
+  tags?: string[] | null
+  updatedAt: string
+  createdAt: string
+  url?: string | null
+  thumbnailURL?: string | null
+  filename?: string | null
+  mimeType?: string | null
+  filesize?: number | null
+  width?: number | null
+  height?: number | null
+  focalX?: number | null
+  focalY?: number | null
   sizes?: {
     thumbnail?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
+      url?: string | null
+      width?: number | null
+      height?: number | null
+      mimeType?: string | null
+      filesize?: number | null
+      filename?: string | null
+    }
     card?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
+      url?: string | null
+      width?: number | null
+      height?: number | null
+      mimeType?: string | null
+      filesize?: number | null
+      filename?: string | null
+    }
     feature?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-  };
+      url?: string | null
+      width?: number | null
+      height?: number | null
+      mimeType?: string | null
+      filesize?: number | null
+      filename?: string | null
+    }
+  }
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "events".
  */
 export interface Event {
-  id: number;
-  title: string;
-  slug?: string | null;
-  featuredImage?: (number | null) | Media;
+  id: number
+  title: string
+  slug?: string | null
+  featuredImage?: (number | null) | Media
   description?: {
     root: {
-      type: string;
+      type: string
       children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
+        type: any
+        version: number
+        [k: string]: unknown
+      }[]
+      direction: ('ltr' | 'rtl') | null
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | ''
+      indent: number
+      version: number
+    }
+    [k: string]: unknown
+  } | null
   /**
    * Event type
    */
-  isVirtual?: boolean | null;
+  isVirtual?: boolean | null
   /**
    * URL to join the virtual event
    */
-  virtualUrl?: string | null;
-  startDateTime: string;
-  endDateTime?: string | null;
-  isAllDay?: boolean | null;
+  virtualUrl?: string | null
+  startDateTime: string
+  endDateTime?: string | null
+  isAllDay?: boolean | null
   /**
    * IANA timezone (e.g. America/Halifax)
    */
-  timezone?: string | null;
+  timezone?: string | null
   /**
    * Event location
    */
-  venue?: (number | null) | Venue;
+  venue?: (number | null) | Venue
   /**
    * External event link (Facebook, Eventbrite, etc.)
    */
-  website?: string | null;
+  website?: string | null
   /**
    * Event categories
    */
-  categories?: (number | Category)[] | null;
-  status?: ('draft' | 'published' | 'cancelled' | 'postponed') | null;
+  categories?: (number | Category)[] | null
+  status?: ('draft' | 'published' | 'cancelled' | 'postponed') | null
   /**
    * Feature this event on the homepage
    */
-  featured?: boolean | null;
-  createdBy?: (number | null) | User;
+  featured?: boolean | null
+  createdBy?: (number | null) | User
   /**
    * WordPress sync metadata
    */
   sync?: {
-    source?: ('manual' | 'wordpress') | null;
+    source?: ('manual' | 'wordpress') | null
     /**
      * WordPress event ID
      */
-    externalId?: string | null;
-    lastSyncedAt?: string | null;
-  };
-  updatedAt: string;
-  createdAt: string;
+    externalId?: string | null
+    lastSyncedAt?: string | null
+  }
+  updatedAt: string
+  createdAt: string
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "venues".
  */
 export interface Venue {
-  id: number;
-  name: string;
-  slug?: string | null;
+  id: number
+  name: string
+  slug?: string | null
   description?: {
     root: {
-      type: string;
+      type: string
       children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
+        type: any
+        version: number
+        [k: string]: unknown
+      }[]
+      direction: ('ltr' | 'rtl') | null
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | ''
+      indent: number
+      version: number
+    }
+    [k: string]: unknown
+  } | null
   address?: {
-    street?: string | null;
-    city?: string | null;
+    street?: string | null
+    city?: string | null
     /**
      * Province/State
      */
-    state?: string | null;
+    state?: string | null
     /**
      * Postal/ZIP code
      */
-    zip?: string | null;
-    country?: string | null;
-  };
+    zip?: string | null
+    country?: string | null
+  }
   /**
    * Geographic coordinates for mapping
    *
    * @minItems 2
    * @maxItems 2
    */
-  coordinates?: [number, number] | null;
-  website?: string | null;
-  phone?: string | null;
+  coordinates?: [number, number] | null
+  website?: string | null
+  phone?: string | null
   /**
    * Maximum venue capacity (manual entry)
    */
-  capacity?: number | null;
-  image?: (number | null) | Media;
+  capacity?: number | null
+  image?: (number | null) | Media
   /**
    * WordPress sync metadata
    */
@@ -341,29 +343,29 @@ export interface Venue {
     /**
      * WordPress venue ID
      */
-    externalId?: string | null;
-    lastSyncedAt?: string | null;
-  };
-  updatedAt: string;
-  createdAt: string;
+    externalId?: string | null
+    lastSyncedAt?: string | null
+  }
+  updatedAt: string
+  createdAt: string
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "categories".
  */
 export interface Category {
-  id: number;
-  name: string;
-  slug?: string | null;
-  description?: string | null;
+  id: number
+  name: string
+  slug?: string | null
+  description?: string | null
   /**
    * Hex color code for UI display (e.g. #FF5733)
    */
-  color?: string | null;
+  color?: string | null
   /**
    * Parent category for hierarchical structure
    */
-  parent?: (number | null) | Category;
+  parent?: (number | null) | Category
   /**
    * WordPress sync metadata
    */
@@ -371,308 +373,307 @@ export interface Category {
     /**
      * WordPress term ID
      */
-    externalId?: string | null;
-    lastSyncedAt?: string | null;
-  };
-  updatedAt: string;
-  createdAt: string;
+    externalId?: string | null
+    lastSyncedAt?: string | null
+  }
+  updatedAt: string
+  createdAt: string
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: number;
-  key: string;
+  id: number
+  key: string
   data:
     | {
-        [k: string]: unknown;
+        [k: string]: unknown
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null;
+    | null
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: number;
+  id: number
   document?:
     | ({
-        relationTo: 'users';
-        value: number | User;
+        relationTo: 'users'
+        value: number | User
       } | null)
     | ({
-        relationTo: 'media';
-        value: number | Media;
+        relationTo: 'media'
+        value: number | Media
       } | null)
     | ({
-        relationTo: 'events';
-        value: number | Event;
+        relationTo: 'events'
+        value: number | Event
       } | null)
     | ({
-        relationTo: 'venues';
-        value: number | Venue;
+        relationTo: 'venues'
+        value: number | Venue
       } | null)
     | ({
-        relationTo: 'categories';
-        value: number | Category;
-      } | null);
-  globalSlug?: string | null;
+        relationTo: 'categories'
+        value: number | Category
+      } | null)
+  globalSlug?: string | null
   user: {
-    relationTo: 'users';
-    value: number | User;
-  };
-  updatedAt: string;
-  createdAt: string;
+    relationTo: 'users'
+    value: number | User
+  }
+  updatedAt: string
+  createdAt: string
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: number;
+  id: number
   user: {
-    relationTo: 'users';
-    value: number | User;
-  };
-  key?: string | null;
+    relationTo: 'users'
+    value: number | User
+  }
+  key?: string | null
   value?:
     | {
-        [k: string]: unknown;
+        [k: string]: unknown
       }
     | unknown[]
     | string
     | number
     | boolean
-    | null;
-  updatedAt: string;
-  createdAt: string;
+    | null
+  updatedAt: string
+  createdAt: string
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: number;
-  name?: string | null;
-  batch?: number | null;
-  updatedAt: string;
-  createdAt: string;
+  id: number
+  name?: string | null
+  batch?: number | null
+  updatedAt: string
+  createdAt: string
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
-  firstName?: T;
-  lastName?: T;
-  avatar?: T;
-  roles?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  email?: T;
-  resetPasswordToken?: T;
-  resetPasswordExpiration?: T;
-  salt?: T;
-  hash?: T;
-  loginAttempts?: T;
-  lockUntil?: T;
+  firstName?: T
+  lastName?: T
+  avatar?: T
+  roles?: T
+  updatedAt?: T
+  createdAt?: T
+  email?: T
+  resetPasswordToken?: T
+  resetPasswordExpiration?: T
+  salt?: T
+  hash?: T
+  loginAttempts?: T
+  lockUntil?: T
   sessions?:
     | T
     | {
-        id?: T;
-        createdAt?: T;
-        expiresAt?: T;
-      };
+        id?: T
+        createdAt?: T
+        expiresAt?: T
+      }
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
-  alt?: T;
-  caption?: T;
-  credit?: T;
-  tags?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  url?: T;
-  thumbnailURL?: T;
-  filename?: T;
-  mimeType?: T;
-  filesize?: T;
-  width?: T;
-  height?: T;
-  focalX?: T;
-  focalY?: T;
+  alt?: T
+  caption?: T
+  credit?: T
+  tags?: T
+  updatedAt?: T
+  createdAt?: T
+  url?: T
+  thumbnailURL?: T
+  filename?: T
+  mimeType?: T
+  filesize?: T
+  width?: T
+  height?: T
+  focalX?: T
+  focalY?: T
   sizes?:
     | T
     | {
         thumbnail?:
           | T
           | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
+              url?: T
+              width?: T
+              height?: T
+              mimeType?: T
+              filesize?: T
+              filename?: T
+            }
         card?:
           | T
           | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
+              url?: T
+              width?: T
+              height?: T
+              mimeType?: T
+              filesize?: T
+              filename?: T
+            }
         feature?:
           | T
           | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-      };
+              url?: T
+              width?: T
+              height?: T
+              mimeType?: T
+              filesize?: T
+              filename?: T
+            }
+      }
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "events_select".
  */
 export interface EventsSelect<T extends boolean = true> {
-  title?: T;
-  slug?: T;
-  featuredImage?: T;
-  description?: T;
-  isVirtual?: T;
-  virtualUrl?: T;
-  startDateTime?: T;
-  endDateTime?: T;
-  isAllDay?: T;
-  timezone?: T;
-  venue?: T;
-  website?: T;
-  categories?: T;
-  status?: T;
-  featured?: T;
-  createdBy?: T;
+  title?: T
+  slug?: T
+  featuredImage?: T
+  description?: T
+  isVirtual?: T
+  virtualUrl?: T
+  startDateTime?: T
+  endDateTime?: T
+  isAllDay?: T
+  timezone?: T
+  venue?: T
+  website?: T
+  categories?: T
+  status?: T
+  featured?: T
+  createdBy?: T
   sync?:
     | T
     | {
-        source?: T;
-        externalId?: T;
-        lastSyncedAt?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
+        source?: T
+        externalId?: T
+        lastSyncedAt?: T
+      }
+  updatedAt?: T
+  createdAt?: T
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "venues_select".
  */
 export interface VenuesSelect<T extends boolean = true> {
-  name?: T;
-  slug?: T;
-  description?: T;
+  name?: T
+  slug?: T
+  description?: T
   address?:
     | T
     | {
-        street?: T;
-        city?: T;
-        state?: T;
-        zip?: T;
-        country?: T;
-      };
-  coordinates?: T;
-  website?: T;
-  phone?: T;
-  capacity?: T;
-  image?: T;
+        street?: T
+        city?: T
+        state?: T
+        zip?: T
+        country?: T
+      }
+  coordinates?: T
+  website?: T
+  phone?: T
+  capacity?: T
+  image?: T
   sync?:
     | T
     | {
-        externalId?: T;
-        lastSyncedAt?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
+        externalId?: T
+        lastSyncedAt?: T
+      }
+  updatedAt?: T
+  createdAt?: T
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "categories_select".
  */
 export interface CategoriesSelect<T extends boolean = true> {
-  name?: T;
-  slug?: T;
-  description?: T;
-  color?: T;
-  parent?: T;
+  name?: T
+  slug?: T
+  description?: T
+  color?: T
+  parent?: T
   sync?:
     | T
     | {
-        externalId?: T;
-        lastSyncedAt?: T;
-      };
-  updatedAt?: T;
-  createdAt?: T;
+        externalId?: T
+        lastSyncedAt?: T
+      }
+  updatedAt?: T
+  createdAt?: T
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
-  key?: T;
-  data?: T;
+  key?: T
+  data?: T
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents_select".
  */
 export interface PayloadLockedDocumentsSelect<T extends boolean = true> {
-  document?: T;
-  globalSlug?: T;
-  user?: T;
-  updatedAt?: T;
-  createdAt?: T;
+  document?: T
+  globalSlug?: T
+  user?: T
+  updatedAt?: T
+  createdAt?: T
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-preferences_select".
  */
 export interface PayloadPreferencesSelect<T extends boolean = true> {
-  user?: T;
-  key?: T;
-  value?: T;
-  updatedAt?: T;
-  createdAt?: T;
+  user?: T
+  key?: T
+  value?: T
+  updatedAt?: T
+  createdAt?: T
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-migrations_select".
  */
 export interface PayloadMigrationsSelect<T extends boolean = true> {
-  name?: T;
-  batch?: T;
-  updatedAt?: T;
-  createdAt?: T;
+  name?: T
+  batch?: T
+  updatedAt?: T
+  createdAt?: T
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "auth".
  */
 export interface Auth {
-  [k: string]: unknown;
+  [k: string]: unknown
 }
-
 
 declare module 'payload' {
   export interface GeneratedTypes extends Config {}

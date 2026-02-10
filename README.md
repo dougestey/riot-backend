@@ -3,8 +3,9 @@
 This project serves as a backend framework for the Riot Events application.
 
 Its responsibilties include:
+
 - content management for curators
-- event ingestion and AI augmentation 
+- event ingestion and AI augmentation
 - enduser sessions
 
 ## Quick start
