@@ -1,9 +1,14 @@
 {
   "name": "riot-backend",
   "version": "1.0.0",
-  "description": "A blank template to get started with Payload 3.0",
+  "description": "Sessions, CMS & AI @ Riot",
   "license": "MIT",
   "type": "module",
+  "lint-staged": {
+    "**/*.{js,jsx,json,ts,tsx}": [
+      "prettier . --write"
+    ]
+  },
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
@@ -11,11 +16,13 @@
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
+    "lint-staged": "lint-staged",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
     "start": "npx payload migrate && cross-env NODE_OPTIONS=\"--no-deprecation --dns-result-order=ipv4first\" next start",
     "test": "pnpm run test:int && pnpm run test:e2e",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --no-experimental-strip-types\" pnpm exec playwright test",
-    "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts"
+    "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.978.0",
@@ -42,10 +49,12 @@
     "@vitejs/plugin-react": "4.5.2",
     "eslint": "^9.16.0",
     "eslint-config-next": "15.4.11",
+    "husky": "^9.1.7",
     "jsdom": "26.1.0",
+    "lint-staged": "^16.2.7",
     "playwright": "1.56.1",
     "playwright-core": "1.56.1",
-    "prettier": "^3.4.2",
+    "prettier": "^3.8.1",
     "typescript": "5.7.3",
     "vite-tsconfig-paths": "5.1.4",
     "vitest": "3.2.3"
