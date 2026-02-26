@@ -6,6 +6,7 @@ import { isAdminOrOwner, isAuthenticated } from '../access'
 export const SavedEvents: CollectionConfig = {
   slug: 'saved-events',
   admin: {
+    hidden: true,
     useAsTitle: 'event',
     defaultColumns: ['event', 'user', 'savedAt'],
     group: 'Content',
