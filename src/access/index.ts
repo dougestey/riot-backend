@@ -31,6 +31,18 @@ export const isAdminOrSelf: Access = ({ req: { user } }) => {
 }
 
 /**
+ * Access control: Admins or the owner of the row (by relationship field)
+ * Use for junction/ownership collections (e.g. saved-events where user owns the row)
+ */
+export const isAdminOrOwner =
+  (ownerField: string): Access =>
+  ({ req: { user } }) => {
+    if (!user) return false
+    if (user.roles?.includes('admin')) return true
+    return { [ownerField]: { equals: user.id } }
+  }
+
+/**
  * Field-level access: Only admins can modify
  */
 export const adminFieldAccess: FieldAccess = ({ req: { user } }) => {
