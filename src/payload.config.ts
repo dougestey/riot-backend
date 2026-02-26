@@ -10,6 +10,7 @@ import { Media } from './collections/Media'
 import { Events } from './collections/Events'
 import { Venues } from './collections/Venues'
 import { Categories } from './collections/Categories'
+import { SavedEvents } from './collections/SavedEvents'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -24,7 +25,7 @@ export default buildConfig({
     },
   }),
 
-  collections: [Users, Media, Events, Venues, Categories],
+  collections: [Users, Media, Events, Venues, Categories, SavedEvents],
 
   // Admin
   admin: {

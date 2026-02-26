@@ -72,6 +72,7 @@ export interface Config {
     events: Event
     venues: Venue
     categories: Category
+    'saved-events': SavedEvent
     'payload-kv': PayloadKv
     'payload-locked-documents': PayloadLockedDocument
     'payload-preferences': PayloadPreference
@@ -84,6 +85,7 @@ export interface Config {
     events: EventsSelect<false> | EventsSelect<true>
     venues: VenuesSelect<false> | VenuesSelect<true>
     categories: CategoriesSelect<false> | CategoriesSelect<true>
+    'saved-events': SavedEventsSelect<false> | SavedEventsSelect<true>
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>
     'payload-locked-documents':
       | PayloadLockedDocumentsSelect<false>
@@ -381,6 +383,24 @@ export interface Category {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "saved-events".
+ */
+export interface SavedEvent {
+  id: number
+  /**
+   * Set automatically from the current user
+   */
+  user: number | User
+  event: number | Event
+  /**
+   * When the user saved this event
+   */
+  savedAt: string
+  updatedAt: string
+  createdAt: string
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -422,6 +442,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'categories'
         value: number | Category
+      } | null)
+    | ({
+        relationTo: 'saved-events'
+        value: number | SavedEvent
       } | null)
   globalSlug?: string | null
   user: {
@@ -624,6 +648,17 @@ export interface CategoriesSelect<T extends boolean = true> {
         externalId?: T
         lastSyncedAt?: T
       }
+  updatedAt?: T
+  createdAt?: T
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "saved-events_select".
+ */
+export interface SavedEventsSelect<T extends boolean = true> {
+  user?: T
+  event?: T
+  savedAt?: T
   updatedAt?: T
   createdAt?: T
 }
