@@ -161,6 +161,7 @@ describe('upsertEvent', () => {
   const opts = {
     venueId: 42,
     categoryIds: [5, 6],
+    organizerIds: [7, 8],
     featuredImageId: 10,
     nowIso: NOW,
   }

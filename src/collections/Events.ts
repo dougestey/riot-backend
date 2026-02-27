@@ -141,6 +141,12 @@ export const Events: CollectionConfig = {
                 description: 'Event categories',
               },
             },
+            {
+              name: 'organizers',
+              type: 'relationship',
+              relationTo: 'organizers',
+              hasMany: true,
+            },
           ],
         },
       ],
