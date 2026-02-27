@@ -10,6 +10,7 @@ import {
   getOrCreateMediaFromUrl,
   upsertCategory,
   upsertEvent,
+  upsertOrganizer,
   upsertVenue,
 } from '@/lib/wordpress'
 
@@ -53,9 +54,10 @@ export async function POST(request: Request) {
   const result: {
     venue?: { id: number; error?: string }
     categories: Array<{ wpId: number; id?: number; error?: string }>
+    organizers: Array<{ wpId: number; id?: number; error?: string }>
     media?: { id: number; created: boolean; error?: string }
     event?: { id: number; action: 'created' | 'updated'; error?: string }
-  } = { categories: [] }
+  } = { categories: [], organizers: [] }
 
   // Upsert venue (tolerates failure)
   let venueId: number | undefined
@@ -81,6 +83,20 @@ export async function POST(request: Request) {
       const message = error instanceof Error ? error.message : String(error)
       console.warn(`Webhook: category upsert failed for WP category ${cat.id}:`, message)
       result.categories.push({ wpId: cat.id, error: message })
+    }
+  }
+
+  // Upsert organizers (tolerates individual failures)
+  const organizerIds: number[] = []
+  for (const org of event.organizers ?? []) {
+    try {
+      const orgId = await upsertOrganizer(payload, org, nowIso)
+      organizerIds.push(orgId)
+      result.organizers.push({ wpId: org.id, id: orgId })
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      console.warn(`Webhook: organizer upsert failed for WP organizer ${org.id}:`, message)
+      result.organizers.push({ wpId: org.id, error: message })
     }
   }
 
@@ -112,6 +128,7 @@ export async function POST(request: Request) {
     const eventResult = await upsertEvent(payload, event, {
       venueId,
       categoryIds,
+      organizerIds,
       featuredImageId,
       nowIso,
     })

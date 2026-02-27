@@ -10,19 +10,22 @@ import config from '../payload.config'
 import {
   type WPCategory,
   type WPEvent,
+  type WPOrganizer,
   type WPVenue,
   cleanText,
   extractImageUrl,
   getOrCreateMediaFromUrl,
   upsertCategory,
   upsertEvent,
+  upsertOrganizer,
   upsertVenue,
 } from '../lib/wordpress'
 
 type EventsFile = { events: WPEvent[] }
 type VenuesFile = { venues: WPVenue[] }
 type CategoriesFile = { categories: WPCategory[] }
-type ImportDataFile = Partial<EventsFile & VenuesFile & CategoriesFile>
+type OrganizersFile = { organizers: WPOrganizer[] }
+type ImportDataFile = Partial<EventsFile & VenuesFile & CategoriesFile & OrganizersFile>
 
 async function readJsonFile<T>(url: URL): Promise<T> {
   const raw = await readFile(fileURLToPath(url), 'utf8')
@@ -33,6 +36,7 @@ async function loadImportData(importsDirUrl: URL): Promise<{
   events: WPEvent[]
   venues: WPVenue[]
   categories: WPCategory[]
+  organizers: WPOrganizer[]
   files: string[]
 }> {
   const importsDirPath = fileURLToPath(importsDirUrl)
@@ -53,6 +57,7 @@ async function loadImportData(importsDirUrl: URL): Promise<{
   const events: WPEvent[] = []
   const venues: WPVenue[] = []
   const categories: WPCategory[] = []
+  const organizers: WPOrganizer[] = []
 
   for (const fileName of files) {
     const fileUrl = new URL(fileName, importsDirUrl)
@@ -61,9 +66,10 @@ async function loadImportData(importsDirUrl: URL): Promise<{
     if (Array.isArray(parsed.events)) events.push(...parsed.events)
     if (Array.isArray(parsed.venues)) venues.push(...parsed.venues)
     if (Array.isArray(parsed.categories)) categories.push(...parsed.categories)
+    if (Array.isArray(parsed.organizers)) organizers.push(...parsed.organizers)
   }
 
-  return { events, venues, categories, files }
+  return { events, venues, categories, organizers, files }
 }
 
 async function runImport() {
@@ -77,6 +83,7 @@ async function runImport() {
 
   const venueByExternalId = new Map<string, number>()
   const categoryByExternalId = new Map<string, number>()
+  const organizerByExternalId = new Map<string, number>()
 
   // Merge dedicated venues export + embedded event venues.
   const allVenues = new Map<number, WPVenue>()
@@ -154,6 +161,38 @@ async function runImport() {
     })
   }
 
+  // Collect organizers from dedicated exports + embedded event organizers.
+  const organizersByExternalId = new Map<string, WPOrganizer>()
+  for (const organizer of importData.organizers ?? []) {
+    organizersByExternalId.set(String(organizer.id), organizer)
+  }
+  for (const event of importData.events ?? []) {
+    for (const organizer of event.organizers ?? []) {
+      organizersByExternalId.set(String(organizer.id), organizer)
+    }
+  }
+
+  let createdOrganizers = 0
+  let updatedOrganizers = 0
+  for (const [externalId, organizer] of organizersByExternalId.entries()) {
+    const existingOrganizers = await payload.find({
+      collection: 'organizers',
+      where: { 'sync.externalId': { equals: externalId } },
+      limit: 1,
+      depth: 0,
+    })
+    const wasExisting = existingOrganizers.docs.length > 0
+
+    const organizerId = await upsertOrganizer(payload, organizer, nowIso)
+    organizerByExternalId.set(externalId, organizerId)
+
+    if (wasExisting) {
+      updatedOrganizers += 1
+    } else {
+      createdOrganizers += 1
+    }
+  }
+
   let createdEvents = 0
   let updatedEvents = 0
   let reusedMedia = 0
@@ -163,6 +202,9 @@ async function runImport() {
     const venueId = event.venue?.id ? venueByExternalId.get(String(event.venue.id)) : undefined
     const categoryIds = (event.categories ?? [])
       .map((category) => categoryByExternalId.get(String(category.id)))
+      .filter((id): id is number => typeof id === 'number')
+    const organizerIds = (event.organizers ?? [])
+      .map((organizer) => organizerByExternalId.get(String(organizer.id)))
       .filter((id): id is number => typeof id === 'number')
 
     const sourceImageUrl = extractImageUrl(event.imageUrl) ?? extractImageUrl(event.image)
@@ -188,6 +230,7 @@ async function runImport() {
       result = await upsertEvent(payload, event, {
         venueId,
         categoryIds,
+        organizerIds,
         featuredImageId,
         nowIso,
       })
@@ -207,6 +250,7 @@ async function runImport() {
   console.log(`- Files loaded: ${importData.files.join(', ')}`)
   console.log(`- Venues: ${createdVenues} created, ${updatedVenues} updated`)
   console.log(`- Categories: ${createdCategories} created, ${updatedCategories} updated`)
+  console.log(`- Organizers: ${createdOrganizers} created, ${updatedOrganizers} updated`)
   console.log(`- Events: ${createdEvents} created, ${updatedEvents} updated`)
   console.log(`- Media: ${createdMedia} created, ${reusedMedia} reused`)
 }

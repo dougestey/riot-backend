@@ -33,6 +33,15 @@ export type WPCategory = {
   parent?: number
 }
 
+export type WPOrganizer = {
+  id: number
+  organizer?: string
+  slug?: string
+  email?: string
+  url?: string
+  modified?: string
+}
+
 export type WPEvent = {
   id: number
   title?: string
@@ -49,6 +58,7 @@ export type WPEvent = {
   is_virtual?: boolean
   virtual_url?: string | null
   categories?: WPCategory[]
+  organizers?: WPOrganizer[]
   venue?: WPVenue | null
   modified?: string
 }
@@ -392,12 +402,78 @@ export async function upsertCategory(
   }
 }
 
+export async function upsertOrganizer(
+  payload: BasePayload,
+  organizer: WPOrganizer,
+  nowIso: string,
+): Promise<number> {
+  const externalId = String(organizer.id)
+
+  const existing = await payload.find({
+    collection: 'organizers',
+    where: { 'sync.externalId': { equals: externalId } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+
+  const data = {
+    name: cleanText(organizer.organizer) ?? `Organizer ${externalId}`,
+    slug: cleanText(organizer.slug) ?? `organizer-${externalId}`,
+    email: cleanText(organizer.email),
+    website: cleanText(organizer.url),
+    sync: {
+      externalId,
+      lastSyncedAt: parseWPDate(organizer.modified) ?? nowIso,
+    },
+  }
+
+  const dataWithFallbackSlug = { ...data, slug: `${data.slug}-${externalId}` }
+
+  if (existing.docs[0]) {
+    try {
+      const updated = await payload.update({
+        collection: 'organizers',
+        id: existing.docs[0].id,
+        data,
+        overrideAccess: true,
+      })
+      return updated.id
+    } catch {
+      const updated = await payload.update({
+        collection: 'organizers',
+        id: existing.docs[0].id,
+        data: dataWithFallbackSlug,
+        overrideAccess: true,
+      })
+      return updated.id
+    }
+  }
+
+  try {
+    const created = await payload.create({
+      collection: 'organizers',
+      data,
+      overrideAccess: true,
+    })
+    return created.id
+  } catch {
+    const created = await payload.create({
+      collection: 'organizers',
+      data: dataWithFallbackSlug,
+      overrideAccess: true,
+    })
+    return created.id
+  }
+}
+
 export async function upsertEvent(
   payload: BasePayload,
   event: WPEvent,
   opts: {
     venueId?: number
     categoryIds: number[]
+    organizerIds: number[]
     featuredImageId?: number
     nowIso: string
   },
@@ -430,6 +506,7 @@ export async function upsertEvent(
     website: cleanText(event.website),
     featuredImage: opts.featuredImageId,
     categories: opts.categoryIds,
+    organizers: opts.organizerIds,
     status: normalizeStatus(event.status),
     featured: Boolean(event.featured),
     sync: {

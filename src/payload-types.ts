@@ -72,6 +72,7 @@ export interface Config {
     events: Event
     venues: Venue
     categories: Category
+    organizers: Organizer
     'saved-events': SavedEvent
     'payload-kv': PayloadKv
     'payload-locked-documents': PayloadLockedDocument
@@ -85,6 +86,7 @@ export interface Config {
     events: EventsSelect<false> | EventsSelect<true>
     venues: VenuesSelect<false> | VenuesSelect<true>
     categories: CategoriesSelect<false> | CategoriesSelect<true>
+    organizers: OrganizersSelect<false> | OrganizersSelect<true>
     'saved-events': SavedEventsSelect<false> | SavedEventsSelect<true>
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>
     'payload-locked-documents':
@@ -268,6 +270,7 @@ export interface Event {
    * Event categories
    */
   categories?: (number | Category)[] | null
+  organizers?: (number | Organizer)[] | null
   status?: ('draft' | 'published' | 'cancelled' | 'postponed') | null
   /**
    * Feature this event on the homepage
@@ -383,6 +386,29 @@ export interface Category {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "organizers".
+ */
+export interface Organizer {
+  id: number
+  name: string
+  slug?: string | null
+  email?: string | null
+  website?: string | null
+  /**
+   * WordPress sync metadata
+   */
+  sync?: {
+    /**
+     * WordPress organizer ID
+     */
+    externalId?: string | null
+    lastSyncedAt?: string | null
+  }
+  updatedAt: string
+  createdAt: string
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "saved-events".
  */
 export interface SavedEvent {
@@ -442,6 +468,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'categories'
         value: number | Category
+      } | null)
+    | ({
+        relationTo: 'organizers'
+        value: number | Organizer
       } | null)
     | ({
         relationTo: 'saved-events'
@@ -588,6 +618,7 @@ export interface EventsSelect<T extends boolean = true> {
   venue?: T
   website?: T
   categories?: T
+  organizers?: T
   status?: T
   featured?: T
   createdBy?: T
@@ -642,6 +673,24 @@ export interface CategoriesSelect<T extends boolean = true> {
   description?: T
   color?: T
   parent?: T
+  sync?:
+    | T
+    | {
+        externalId?: T
+        lastSyncedAt?: T
+      }
+  updatedAt?: T
+  createdAt?: T
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "organizers_select".
+ */
+export interface OrganizersSelect<T extends boolean = true> {
+  name?: T
+  slug?: T
+  email?: T
+  website?: T
   sync?:
     | T
     | {
