@@ -289,22 +289,43 @@ export async function upsertVenue(
     },
   }
 
+  const dataWithFallbackSlug = { ...data, slug: `${data.slug}-${externalId}` }
+
   if (existing.docs[0]) {
-    const updated = await payload.update({
+    try {
+      const updated = await payload.update({
+        collection: 'venues',
+        id: existing.docs[0].id,
+        data,
+        overrideAccess: true,
+      })
+      return updated.id
+    } catch {
+      const updated = await payload.update({
+        collection: 'venues',
+        id: existing.docs[0].id,
+        data: dataWithFallbackSlug,
+        overrideAccess: true,
+      })
+      return updated.id
+    }
+  }
+
+  try {
+    const created = await payload.create({
       collection: 'venues',
-      id: existing.docs[0].id,
       data,
       overrideAccess: true,
     })
-    return updated.id
+    return created.id
+  } catch {
+    const created = await payload.create({
+      collection: 'venues',
+      data: dataWithFallbackSlug,
+      overrideAccess: true,
+    })
+    return created.id
   }
-
-  const created = await payload.create({
-    collection: 'venues',
-    data,
-    overrideAccess: true,
-  })
-  return created.id
 }
 
 export async function upsertCategory(
@@ -332,22 +353,43 @@ export async function upsertCategory(
     },
   }
 
+  const dataWithFallbackSlug = { ...data, slug: `${data.slug}-${externalId}` }
+
   if (existing.docs[0]) {
-    const updated = await payload.update({
+    try {
+      const updated = await payload.update({
+        collection: 'categories',
+        id: existing.docs[0].id,
+        data,
+        overrideAccess: true,
+      })
+      return updated.id
+    } catch {
+      const updated = await payload.update({
+        collection: 'categories',
+        id: existing.docs[0].id,
+        data: dataWithFallbackSlug,
+        overrideAccess: true,
+      })
+      return updated.id
+    }
+  }
+
+  try {
+    const created = await payload.create({
       collection: 'categories',
-      id: existing.docs[0].id,
       data,
       overrideAccess: true,
     })
-    return updated.id
+    return created.id
+  } catch {
+    const created = await payload.create({
+      collection: 'categories',
+      data: dataWithFallbackSlug,
+      overrideAccess: true,
+    })
+    return created.id
   }
-
-  const created = await payload.create({
-    collection: 'categories',
-    data,
-    overrideAccess: true,
-  })
-  return created.id
 }
 
 export async function upsertEvent(
@@ -397,20 +439,41 @@ export async function upsertEvent(
     },
   }
 
+  const dataWithFallbackSlug = { ...data, slug: `${data.slug}-${externalId}` }
+
   if (existing.docs[0]) {
-    const updated = await payload.update({
+    try {
+      const updated = await payload.update({
+        collection: 'events',
+        id: existing.docs[0].id,
+        data,
+        overrideAccess: true,
+      })
+      return { id: updated.id, action: 'updated' }
+    } catch {
+      const updated = await payload.update({
+        collection: 'events',
+        id: existing.docs[0].id,
+        data: dataWithFallbackSlug,
+        overrideAccess: true,
+      })
+      return { id: updated.id, action: 'updated' }
+    }
+  }
+
+  try {
+    const created = await payload.create({
       collection: 'events',
-      id: existing.docs[0].id,
       data,
       overrideAccess: true,
     })
-    return { id: updated.id, action: 'updated' }
+    return { id: created.id, action: 'created' }
+  } catch {
+    const created = await payload.create({
+      collection: 'events',
+      data: dataWithFallbackSlug,
+      overrideAccess: true,
+    })
+    return { id: created.id, action: 'created' }
   }
-
-  const created = await payload.create({
-    collection: 'events',
-    data,
-    overrideAccess: true,
-  })
-  return { id: created.id, action: 'created' }
 }
