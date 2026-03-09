@@ -819,4 +819,3 @@ components:
         image:
           type: string
           nullable: true
-
