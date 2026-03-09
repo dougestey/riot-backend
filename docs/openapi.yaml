@@ -1,0 +1,822 @@
+openapi: 3.1.0
+info:
+  title: Riot Events API
+  version: 0.1.0
+  description: >
+    REST API for Riot events, venues, categories, organizers, users, and saved
+    events, backed by Payload CMS.
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://YOUR-PROD-DOMAIN
+    description: Production
+
+tags:
+  - name: Events
+  - name: Venues
+  - name: Categories
+  - name: Organizers
+  - name: SavedEvents
+  - name: Auth
+  - name: Webhooks
+
+paths:
+  /api/events:
+    get:
+      tags: [Events]
+      summary: List events
+      description: >
+        Returns a paginated list of events. Supports standard Payload REST
+        query params such as `where`, `page`, `limit`, `sort`, `depth`.
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+          description: Page number (1-based).
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Number of docs per page.
+      responses:
+        '200':
+          description: Paginated list of events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedEvents'
+    post:
+      tags: [Events]
+      summary: Create event
+      description: Create a new event (requires appropriate permissions).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventInput'
+      responses:
+        '201':
+          description: Event created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+
+  /api/events/{id}:
+    get:
+      tags: [Events]
+      summary: Get event by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '404':
+          description: Event not found
+    patch:
+      tags: [Events]
+      summary: Update event by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventInput'
+      responses:
+        '200':
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+    delete:
+      tags: [Events]
+      summary: Delete event by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Event deleted
+
+  /api/venues:
+    get:
+      tags: [Venues]
+      summary: List venues
+      responses:
+        '200':
+          description: Paginated list of venues
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedVenues'
+
+  /api/categories:
+    get:
+      tags: [Categories]
+      summary: List categories
+      responses:
+        '200':
+          description: Paginated list of categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCategories'
+
+  /api/organizers:
+    get:
+      tags: [Organizers]
+      summary: List organizers
+      responses:
+        '200':
+          description: Paginated list of organizers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOrganizers'
+
+  /api/saved-events:
+    get:
+      tags: [SavedEvents]
+      summary: List saved events for the current user
+      responses:
+        '200':
+          description: Paginated list of saved events
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSavedEvents'
+    post:
+      tags: [SavedEvents]
+      summary: Save an event for the current user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  description: Event ID to save
+                  type: integer
+              required:
+                - event
+      responses:
+        '201':
+          description: Saved event created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SavedEvent'
+
+  /api/saved-events/{id}:
+    delete:
+      tags: [SavedEvents]
+      summary: Delete a saved event by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Saved event deleted
+
+  /api/users/login:
+    post:
+      tags: [Auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+
+  /api/users/me:
+    get:
+      tags: [Auth]
+      summary: Get current user
+      responses:
+        '200':
+          description: Current authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+
+  /api/webhooks/wordpress:
+    post:
+      tags: [Webhooks]
+      summary: WordPress events webhook
+      description: >
+        Ingests events from WordPress, upserting venues, categories, organizers,
+        media, and events. Protected by the `x-webhook-secret` header.
+      parameters:
+        - in: header
+          name: x-webhook-secret
+          required: true
+          schema:
+            type: string
+          description: Shared secret for authenticating the webhook.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                event:
+                  $ref: '#/components/schemas/WPEvent'
+              required:
+                - event
+      responses:
+        '200':
+          description: Webhook processed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  venue:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: integer
+                      error:
+                        type: string
+                        nullable: true
+                  categories:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        wpId:
+                          type: integer
+                        id:
+                          type: integer
+                          nullable: true
+                        error:
+                          type: string
+                          nullable: true
+                  organizers:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        wpId:
+                          type: integer
+                        id:
+                          type: integer
+                          nullable: true
+                        error:
+                          type: string
+                          nullable: true
+                  media:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: integer
+                      created:
+                        type: boolean
+                      error:
+                        type: string
+                        nullable: true
+                  event:
+                    type: object
+                    nullable: true
+                    properties:
+                      id:
+                        type: integer
+                      action:
+                        type: string
+                        enum: [created, updated]
+                      error:
+                        type: string
+                        nullable: true
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized (missing or invalid webhook secret)
+        '422':
+          description: Event upsert failed
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Event:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        slug:
+          type: string
+          nullable: true
+        featuredImage:
+          $ref: '#/components/schemas/Media'
+          nullable: true
+        description:
+          type: object
+          nullable: true
+        isVirtual:
+          type: boolean
+          nullable: true
+        virtualUrl:
+          type: string
+          nullable: true
+        startDateTime:
+          type: string
+          format: date-time
+        endDateTime:
+          type: string
+          format: date-time
+          nullable: true
+        isAllDay:
+          type: boolean
+          nullable: true
+        timezone:
+          type: string
+          nullable: true
+        venue:
+          $ref: '#/components/schemas/Venue'
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        categories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        organizers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Organizer'
+        status:
+          type: string
+          enum: [draft, published, cancelled, postponed]
+          nullable: true
+        featured:
+          type: boolean
+          nullable: true
+        createdBy:
+          $ref: '#/components/schemas/User'
+          nullable: true
+        sync:
+          type: object
+          nullable: true
+          properties:
+            source:
+              type: string
+              enum: [manual, wordpress]
+              nullable: true
+            externalId:
+              type: string
+              nullable: true
+            lastSyncedAt:
+              type: string
+              format: date-time
+              nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    EventInput:
+      type: object
+      properties:
+        title:
+          type: string
+        slug:
+          type: string
+        featuredImage:
+          type: integer
+          nullable: true
+        description:
+          type: object
+          nullable: true
+        isVirtual:
+          type: boolean
+        virtualUrl:
+          type: string
+          nullable: true
+        startDateTime:
+          type: string
+          format: date-time
+        endDateTime:
+          type: string
+          format: date-time
+          nullable: true
+        isAllDay:
+          type: boolean
+        timezone:
+          type: string
+        venue:
+          type: integer
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        categories:
+          type: array
+          items:
+            type: integer
+        organizers:
+          type: array
+          items:
+            type: integer
+        status:
+          type: string
+          enum: [draft, published, cancelled, postponed]
+        featured:
+          type: boolean
+
+    Venue:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+          nullable: true
+        description:
+          type: object
+          nullable: true
+        address:
+          type: object
+          nullable: true
+          properties:
+            street:
+              type: string
+              nullable: true
+            city:
+              type: string
+              nullable: true
+            state:
+              type: string
+              nullable: true
+            zip:
+              type: string
+              nullable: true
+            country:
+              type: string
+              nullable: true
+        coordinates:
+          type: array
+          nullable: true
+          items:
+            type: number
+        website:
+          type: string
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        capacity:
+          type: integer
+          nullable: true
+        image:
+          $ref: '#/components/schemas/Media'
+          nullable: true
+        sync:
+          type: object
+          nullable: true
+          properties:
+            externalId:
+              type: string
+              nullable: true
+            lastSyncedAt:
+              type: string
+              format: date-time
+              nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        color:
+          type: string
+          nullable: true
+        parent:
+          $ref: '#/components/schemas/Category'
+          nullable: true
+        sync:
+          type: object
+          nullable: true
+          properties:
+            externalId:
+              type: string
+              nullable: true
+            lastSyncedAt:
+              type: string
+              format: date-time
+              nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Organizer:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        website:
+          type: string
+          nullable: true
+        sync:
+          type: object
+          nullable: true
+          properties:
+            externalId:
+              type: string
+              nullable: true
+            lastSyncedAt:
+              type: string
+              format: date-time
+              nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Media:
+      type: object
+      properties:
+        id:
+          type: integer
+        alt:
+          type: string
+        caption:
+          type: string
+          nullable: true
+        credit:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        url:
+          type: string
+          nullable: true
+        thumbnailURL:
+          type: string
+          nullable: true
+        filename:
+          type: string
+          nullable: true
+        mimeType:
+          type: string
+          nullable: true
+        filesize:
+          type: integer
+          nullable: true
+        width:
+          type: integer
+          nullable: true
+        height:
+          type: integer
+          nullable: true
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        email:
+          type: string
+          format: email
+        roles:
+          type: array
+          items:
+            type: string
+            enum: [admin, editor, attendee]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    SavedEvent:
+      type: object
+      properties:
+        id:
+          type: integer
+        user:
+          $ref: '#/components/schemas/User'
+        event:
+          $ref: '#/components/schemas/Event'
+        savedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    PaginatedEvents:
+      type: object
+      properties:
+        docs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Event'
+        totalDocs:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    PaginatedVenues:
+      type: object
+      properties:
+        docs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Venue'
+        totalDocs:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    PaginatedCategories:
+      type: object
+      properties:
+        docs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Category'
+        totalDocs:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    PaginatedOrganizers:
+      type: object
+      properties:
+        docs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Organizer'
+        totalDocs:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    PaginatedSavedEvents:
+      type: object
+      properties:
+        docs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SavedEvent'
+        totalDocs:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    WPEvent:
+      type: object
+      description: Minimal shape of the WordPress event payload consumed by the webhook.
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        start_date:
+          type: string
+        end_date:
+          type: string
+          nullable: true
+        venue:
+          type: object
+          nullable: true
+        categories:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+        organizers:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+        imageUrl:
+          type: string
+          nullable: true
+        image:
+          type: string
+          nullable: true
+
