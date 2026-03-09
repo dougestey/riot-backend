@@ -16,8 +16,17 @@ import { SavedEvents } from './collections/SavedEvents'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',')
+      .map((o) => o.trim())
+      .filter(Boolean)
+  : []
+
 export default buildConfig({
   secret: process.env.PAYLOAD_SECRET || '',
+
+  // CORS: comma-separated list of allowed origins (required when using credentials). Set in all environments.
+  cors: corsOrigins,
 
   // Database
   db: postgresAdapter({
