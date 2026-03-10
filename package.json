@@ -14,7 +14,7 @@
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "devsafe": "rm -rf .next && cross-env NODE_OPTIONS=--no-deprecation next dev",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
-    "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
+    "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types && prettier src/payload-types.ts --write",
     "import": "cross-env NODE_OPTIONS=--no-deprecation tsx src/scripts/importWordpressData.ts",
     "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
     "lint-staged": "lint-staged",
