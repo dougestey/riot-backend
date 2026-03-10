@@ -205,6 +205,54 @@ paths:
         '204':
           description: Saved event deleted
 
+  /api/register:
+    post:
+      tags: [Auth]
+      summary: Register a new user
+      description: >
+        Creates a new user with the `attendee` role and auto-logs them in.
+        Returns the user object, JWT token, and sets the `payload-token` cookie.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                firstName:
+                  type: string
+                lastName:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        '201':
+          description: Registration successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  user:
+                    $ref: '#/components/schemas/User'
+                  token:
+                    type: string
+                  exp:
+                    type: integer
+        '400':
+          description: >
+            Validation error — missing fields, invalid email, password too short,
+            or email already exists.
+
   /api/users/login:
     post:
       tags: [Auth]

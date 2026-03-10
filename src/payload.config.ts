@@ -5,6 +5,7 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
+import { registerEndpoint } from './endpoints/register'
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Events } from './collections/Events'
@@ -24,9 +25,13 @@ const corsOrigins = process.env.CORS_ORIGINS
 
 export default buildConfig({
   secret: process.env.PAYLOAD_SECRET || '',
+  serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL || '',
 
   // CORS: comma-separated list of allowed origins (required when using credentials). Set in all environments.
   cors: corsOrigins,
+
+  // CSRF: only accept cookie-authenticated mutations from these origins
+  csrf: corsOrigins,
 
   // Database
   db: postgresAdapter({
@@ -34,6 +39,9 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URL || '',
     },
   }),
+
+  // Custom endpoints
+  endpoints: [registerEndpoint],
 
   collections: [Users, Media, Events, Venues, Categories, Organizers, SavedEvents],
 
