@@ -24,14 +24,15 @@ Adds cookie-based session auth configuration, a public self-registration endpoin
 - **Behavior:**
   - **POST** only; expects JSON: `email`, `password`, optional `firstName`, `lastName`
   - Validates: required email/password, email format, password length ≥ 8
-  - Checks for existing user by email; returns 400 if duplicate
+  - Normalizes email addresses before account creation
   - Creates user with **attendee** role only (`overrideAccess: true` for create)
   - Auto-logs in via `payload.login()` and returns user + token
-  - Sets `payload-token` cookie on response (SameSite, Secure, Domain, Max-Age 7 days) so browser clients get a session without handling the token manually
+  - Uses Payload's cookie generator so the cookie prefix, SameSite, Secure, Domain, and expiry settings match the Users auth configuration
+  - Returns generic public errors while logging underlying failures server-side
 - **Responses:**
   - **201** — User created and logged in; body includes `message`, `user`, `token`, `exp`; `Set-Cookie` header set
-  - **400** — Invalid JSON, missing/invalid email or password, or email already exists
-  - **500** — Registration succeeded but auto-login failed (rare)
+  - **400** — Invalid JSON, missing/invalid email or password, or account creation rejected
+  - **500** — Account created but auto-login failed (rare; client can use the normal login flow)
 
 ### 3. Payload config
 
@@ -57,16 +58,16 @@ Adds cookie-based session auth configuration, a public self-registration endpoin
 ## Security / access
 
 - Registration is **unauthenticated** (public). New users are restricted to the **attendee** role.
-- Create user and login use `overrideAccess: true` only where required (user creation and Payload’s own login); no broader privilege escalation.
+- User creation intentionally uses `overrideAccess: true`; login goes through Payload's authentication operation.
+- Account-creation and login failures do not expose internal Payload or database messages.
 - CSRF and CORS are aligned so only configured origins can perform cookie-authenticated mutations.
 
-## Testing suggestions
+## Validation
 
-- [ ] Register with valid email/password → 201, user + token in body, `payload-token` cookie set
-- [ ] Register with duplicate email → 400
-- [ ] Register with invalid email or password &lt; 8 chars → 400
-- [ ] Login after register using cookie (no token in body) → session works for protected routes
-- [ ] With `COOKIE_SAMESITE=None` and `Secure` in prod, verify cross-origin cookie is sent from allowed frontend origin
+- Automated endpoint tests cover successful registration, attendee-role enforcement, normalized input, invalid input, sanitized create/login failures, and Payload-derived cookie attributes.
+- TypeScript, lint, all 72 unit tests, generated types, and the production build pass.
+- The database smoke test requires a PostgreSQL instance with PostGIS; run it in the deployment environment before release.
+- Production deployment still needs the normal browser smoke test for its actual frontend/API origins and cookie domain.
 
 ## Follow-up / docs
 

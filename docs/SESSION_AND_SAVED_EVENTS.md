@@ -33,7 +33,8 @@ The response sets a `payload-token` cookie automatically. New users always get t
 
 **Errors:**
 
-- `400` — Missing fields, invalid email, password too short (< 8 chars), or email already exists
+- `400` — Missing fields, invalid email, password too short (< 8 chars), or account creation rejected
+- `500` — Account created but automatic sign-in failed; retry using the normal login endpoint
 
 ### Login
 

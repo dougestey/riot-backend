@@ -1,4 +1,11 @@
 import type { Endpoint } from 'payload'
+import { generatePayloadCookie } from 'payload/shared'
+
+const errorResponse = (message: string, status: number) =>
+  Response.json({ errors: [{ message }] }, { status })
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
 
 export const registerEndpoint: Endpoint = {
   path: '/register',
@@ -6,55 +13,36 @@ export const registerEndpoint: Endpoint = {
   handler: async (req) => {
     const { payload } = req
 
-    let body: Record<string, unknown>
+    let body: unknown
     try {
-      body = (await req.json?.()) as Record<string, unknown>
+      body = await req.json?.()
     } catch {
-      return Response.json({ errors: [{ message: 'Invalid JSON body' }] }, { status: 400 })
+      return errorResponse('Invalid JSON body', 400)
     }
 
-    const { email, password, firstName, lastName } = body as {
-      email?: string
-      password?: string
-      firstName?: string
-      lastName?: string
+    if (!isRecord(body)) {
+      return errorResponse('Invalid JSON body', 400)
     }
+
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
+    const password = typeof body.password === 'string' ? body.password : ''
+    const firstName = typeof body.firstName === 'string' ? body.firstName.trim() : undefined
+    const lastName = typeof body.lastName === 'string' ? body.lastName.trim() : undefined
 
     // Validate required fields
     if (!email || !password) {
-      return Response.json(
-        { errors: [{ message: 'Email and password are required' }] },
-        { status: 400 },
-      )
+      return errorResponse('Email and password are required', 400)
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(email)) {
-      return Response.json({ errors: [{ message: 'Invalid email format' }] }, { status: 400 })
+      return errorResponse('Invalid email format', 400)
     }
 
     // Validate password strength (min 8 chars)
     if (password.length < 8) {
-      return Response.json(
-        { errors: [{ message: 'Password must be at least 8 characters' }] },
-        { status: 400 },
-      )
-    }
-
-    // Check if email already exists
-    const existing = await payload.find({
-      collection: 'users',
-      where: { email: { equals: email } },
-      limit: 1,
-      overrideAccess: true,
-    })
-
-    if (existing.totalDocs > 0) {
-      return Response.json(
-        { errors: [{ message: 'An account with this email already exists' }] },
-        { status: 400 },
-      )
+      return errorResponse('Password must be at least 8 characters', 400)
     }
 
     // Create the user with attendee role only
@@ -69,10 +57,11 @@ export const registerEndpoint: Endpoint = {
           ...(lastName && { lastName }),
         },
         overrideAccess: true,
+        req,
       })
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create user'
-      return Response.json({ errors: [{ message }] }, { status: 400 })
+      payload.logger.error({ err, msg: 'Self-registration failed' })
+      return errorResponse('Unable to create account with the provided details', 400)
     }
 
     // Auto-login and return user with cookie
@@ -81,6 +70,17 @@ export const registerEndpoint: Endpoint = {
         collection: 'users',
         data: { email, password },
         req,
+      })
+      const authConfig = payload.collections.users.config.auth
+
+      if (!authConfig || !loginResult.token) {
+        throw new Error('Login completed without an auth configuration or token')
+      }
+
+      const cookie = generatePayloadCookie({
+        collectionAuthConfig: authConfig,
+        cookiePrefix: payload.config.cookiePrefix,
+        token: loginResult.token,
       })
 
       return Response.json(
@@ -93,14 +93,13 @@ export const registerEndpoint: Endpoint = {
         {
           status: 201,
           headers: {
-            'Set-Cookie': `payload-token=${loginResult.token}; Path=/; HttpOnly; SameSite=${process.env.COOKIE_SAMESITE || 'Lax'}${process.env.NODE_ENV === 'production' ? '; Secure' : ''}${process.env.COOKIE_DOMAIN ? `; Domain=${process.env.COOKIE_DOMAIN}` : ''}; Max-Age=${60 * 60 * 24 * 7}`,
+            'Set-Cookie': cookie,
           },
         },
       )
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Registration succeeded but auto-login failed'
-      return Response.json({ errors: [{ message }] }, { status: 500 })
+      payload.logger.error({ err, msg: 'Self-registration auto-login failed' })
+      return errorResponse('Account created, but sign-in failed. Please log in.', 500)
     }
   },
 }

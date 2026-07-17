@@ -251,7 +251,9 @@ paths:
         '400':
           description: >
             Validation error — missing fields, invalid email, password too short,
-            or email already exists.
+            or account creation rejected.
+        '500':
+          description: Account created, but automatic sign-in failed.
 
   /api/users/login:
     post:
