@@ -4,7 +4,14 @@ import { isAdmin, isAdminOrSelf, adminFieldAccess } from '../access'
 
 export const Users: CollectionConfig = {
   slug: 'users',
-  auth: true,
+  auth: {
+    tokenExpiration: 604800, // 7 days
+    cookies: {
+      sameSite: (process.env.COOKIE_SAMESITE as 'Lax' | 'None' | 'Strict') || 'Lax',
+      secure: process.env.NODE_ENV === 'production',
+      domain: process.env.COOKIE_DOMAIN || undefined,
+    },
+  },
   admin: {
     useAsTitle: 'email',
     defaultColumns: ['email', 'firstName', 'lastName', 'roles'],
