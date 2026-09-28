@@ -34,6 +34,15 @@ export const Venues: CollectionConfig = {
       name: 'description',
       type: 'richText',
     },
+    {
+      name: 'city',
+      type: 'relationship',
+      relationTo: 'cities',
+      index: true,
+      admin: {
+        description: 'Normalized city used for imports and ambassador authorization',
+      },
+    },
     // Address group
     {
       name: 'address',
@@ -111,6 +120,54 @@ export const Venues: CollectionConfig = {
       name: 'image',
       type: 'upload',
       relationTo: 'media',
+    },
+    {
+      name: 'instagram',
+      type: 'group',
+      admin: {
+        description: 'Instagram Business/Creator account monitoring',
+      },
+      fields: [
+        {
+          name: 'username',
+          type: 'text',
+          index: true,
+          admin: { description: 'Username without @' },
+        },
+        {
+          name: 'accountId',
+          type: 'text',
+          index: true,
+          admin: { readOnly: true },
+        },
+        {
+          name: 'monitoringEnabled',
+          type: 'checkbox',
+          defaultValue: false,
+        },
+        {
+          name: 'lastCheckedAt',
+          type: 'date',
+          admin: { readOnly: true },
+        },
+        {
+          name: 'status',
+          type: 'select',
+          defaultValue: 'unverified',
+          options: [
+            { label: 'Unverified', value: 'unverified' },
+            { label: 'Active', value: 'active' },
+            { label: 'Unavailable', value: 'unavailable' },
+            { label: 'Error', value: 'error' },
+          ],
+          admin: { readOnly: true },
+        },
+        {
+          name: 'lastError',
+          type: 'textarea',
+          admin: { readOnly: true },
+        },
+      ],
     },
     // Sync tracking
     {

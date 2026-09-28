@@ -69,12 +69,16 @@ export interface Config {
   collections: {
     users: User
     media: Media
+    cities: City
     events: Event
     venues: Venue
     categories: Category
     organizers: Organizer
     'saved-events': SavedEvent
+    'oauth-connections': OauthConnection
+    'ingestion-records': IngestionRecord
     'payload-kv': PayloadKv
+    'payload-jobs': PayloadJob
     'payload-locked-documents': PayloadLockedDocument
     'payload-preferences': PayloadPreference
     'payload-migrations': PayloadMigration
@@ -83,12 +87,16 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>
     media: MediaSelect<false> | MediaSelect<true>
+    cities: CitiesSelect<false> | CitiesSelect<true>
     events: EventsSelect<false> | EventsSelect<true>
     venues: VenuesSelect<false> | VenuesSelect<true>
     categories: CategoriesSelect<false> | CategoriesSelect<true>
     organizers: OrganizersSelect<false> | OrganizersSelect<true>
     'saved-events': SavedEventsSelect<false> | SavedEventsSelect<true>
+    'oauth-connections': OauthConnectionsSelect<false> | OauthConnectionsSelect<true>
+    'ingestion-records': IngestionRecordsSelect<false> | IngestionRecordsSelect<true>
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>
+    'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>
     'payload-locked-documents':
       | PayloadLockedDocumentsSelect<false>
       | PayloadLockedDocumentsSelect<true>
@@ -99,14 +107,27 @@ export interface Config {
     defaultIDType: number
   }
   fallbackLocale: null
-  globals: {}
-  globalsSelect: {}
+  globals: {
+    'payload-jobs-stats': PayloadJobsStat
+  }
+  globalsSelect: {
+    'payload-jobs-stats': PayloadJobsStatsSelect<false> | PayloadJobsStatsSelect<true>
+  }
   locale: null
   user: User & {
     collection: 'users'
   }
   jobs: {
-    tasks: unknown
+    tasks: {
+      syncGoogleCalendar: TaskSyncGoogleCalendar
+      pollInstagramVenue: TaskPollInstagramVenue
+      pollGoogleCalendars: TaskPollGoogleCalendars
+      pollInstagramVenues: TaskPollInstagramVenues
+      inline: {
+        input: unknown
+        output: unknown
+      }
+    }
     workflows: unknown
   }
 }
@@ -140,7 +161,11 @@ export interface User {
   /**
    * User roles determine access permissions
    */
-  roles: ('admin' | 'editor' | 'attendee')[]
+  roles: ('admin' | 'editor' | 'ambassador' | 'attendee')[]
+  /**
+   * Cities in which this user may submit draft events
+   */
+  assignedCities?: (number | City)[] | null
   updatedAt: string
   createdAt: string
   email: string
@@ -181,6 +206,15 @@ export interface Media {
    * Tags for organization and AI tagging
    */
   tags?: string[] | null
+  /**
+   * External media provenance
+   */
+  source?: {
+    sourceKey?: string | null
+    platform?: ('instagram' | 'facebook' | 'wordpress') | null
+    externalId?: string | null
+    sourceUrl?: string | null
+  }
   updatedAt: string
   createdAt: string
   url?: string | null
@@ -218,6 +252,24 @@ export interface Media {
       filename?: string | null
     }
   }
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cities".
+ */
+export interface City {
+  id: number
+  name: string
+  slug: string
+  region?: string | null
+  country: string
+  /**
+   * IANA timezone used when an imported event omits one
+   */
+  timezone: string
+  active: boolean
+  updatedAt: string
+  createdAt: string
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -263,6 +315,10 @@ export interface Event {
    */
   venue?: (number | null) | Venue
   /**
+   * Normalized city used for authorization and discovery
+   */
+  city?: (number | null) | City
+  /**
    * External event link (Facebook, Eventbrite, etc.)
    */
   website?: string | null
@@ -281,11 +337,28 @@ export interface Event {
    * WordPress sync metadata
    */
   sync?: {
-    source?: ('manual' | 'wordpress') | null
+    source?:
+      | (
+          | 'manual'
+          | 'wordpress'
+          | 'facebook'
+          | 'google-calendar'
+          | 'ical'
+          | 'facebook-export'
+          | 'csv'
+          | 'instagram'
+        )
+      | null
     /**
-     * WordPress event ID
+     * ID assigned by the external source
      */
     externalId?: string | null
+    /**
+     * Namespaced source identity
+     */
+    sourceKey?: string | null
+    externalUrl?: string | null
+    ingestionRecord?: (number | null) | IngestionRecord
     lastSyncedAt?: string | null
   }
   updatedAt: string
@@ -314,6 +387,10 @@ export interface Venue {
     }
     [k: string]: unknown
   } | null
+  /**
+   * Normalized city used for imports and ambassador authorization
+   */
+  city?: (number | null) | City
   address?: {
     street?: string | null
     city?: string | null
@@ -341,6 +418,20 @@ export interface Venue {
    */
   capacity?: number | null
   image?: (number | null) | Media
+  /**
+   * Instagram Business/Creator account monitoring
+   */
+  instagram?: {
+    /**
+     * Username without @
+     */
+    username?: string | null
+    accountId?: string | null
+    monitoringEnabled?: boolean | null
+    lastCheckedAt?: string | null
+    status?: ('unverified' | 'active' | 'unavailable' | 'error') | null
+    lastError?: string | null
+  }
   /**
    * WordPress sync metadata
    */
@@ -409,6 +500,99 @@ export interface Organizer {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ingestion-records".
+ */
+export interface IngestionRecord {
+  id: number
+  source:
+    | 'facebook'
+    | 'google-calendar'
+    | 'ical'
+    | 'facebook-export'
+    | 'csv'
+    | 'instagram'
+    | 'wordpress'
+  sourceKey: string
+  externalId: string
+  canonicalUrl?: string | null
+  status: 'pending' | 'processing' | 'needs-review' | 'event-created' | 'skipped' | 'failed'
+  city: number | City
+  venue?: (number | null) | Venue
+  submittedBy?: (number | null) | User
+  connection?: (number | null) | OauthConnection
+  linkedEvent?: (number | null) | Event
+  duplicateCandidates?: (number | Event)[] | null
+  normalizedPayload:
+    | {
+        [k: string]: unknown
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null
+  /**
+   * A bounded source snapshot; never store full account exports here
+   */
+  sourcePayload?:
+    | {
+        [k: string]: unknown
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null
+  payloadHash: string
+  confidence?: number | null
+  model?: string | null
+  extractionEvidence?:
+    | {
+        [k: string]: unknown
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null
+  sourceUpdatedAt?: string | null
+  processedAt?: string | null
+  errors?:
+    | {
+        field?: string | null
+        message: string
+        id?: string | null
+      }[]
+    | null
+  updatedAt: string
+  createdAt: string
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "oauth-connections".
+ */
+export interface OauthConnection {
+  id: number
+  owner: number | User
+  city: number | City
+  label: string
+  provider: 'google' | 'meta'
+  status: 'pending' | 'active' | 'error' | 'revoked'
+  externalAccountId?: string | null
+  calendarId?: string | null
+  calendarName?: string | null
+  grantedScopes?: string[] | null
+  encryptedCredentials?: string | null
+  encryptedOAuthState?: string | null
+  stateExpiresAt?: string | null
+  syncToken?: string | null
+  lastSyncedAt?: string | null
+  lastError?: string | null
+  updatedAt: string
+  createdAt: string
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "saved-events".
  */
 export interface SavedEvent {
@@ -444,6 +628,124 @@ export interface PayloadKv {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs".
+ */
+export interface PayloadJob {
+  id: number
+  /**
+   * Input data provided to the job
+   */
+  input?:
+    | {
+        [k: string]: unknown
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null
+  taskStatus?:
+    | {
+        [k: string]: unknown
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null
+  completedAt?: string | null
+  totalTried?: number | null
+  /**
+   * If hasError is true this job will not be retried
+   */
+  hasError?: boolean | null
+  /**
+   * If hasError is true, this is the error that caused it
+   */
+  error?:
+    | {
+        [k: string]: unknown
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null
+  /**
+   * Task execution log
+   */
+  log?:
+    | {
+        executedAt: string
+        completedAt: string
+        taskSlug:
+          | 'inline'
+          | 'syncGoogleCalendar'
+          | 'pollInstagramVenue'
+          | 'pollGoogleCalendars'
+          | 'pollInstagramVenues'
+        taskID: string
+        input?:
+          | {
+              [k: string]: unknown
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null
+        output?:
+          | {
+              [k: string]: unknown
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null
+        state: 'failed' | 'succeeded'
+        error?:
+          | {
+              [k: string]: unknown
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null
+        id?: string | null
+      }[]
+    | null
+  taskSlug?:
+    | (
+        | 'inline'
+        | 'syncGoogleCalendar'
+        | 'pollInstagramVenue'
+        | 'pollGoogleCalendars'
+        | 'pollInstagramVenues'
+      )
+    | null
+  queue?: string | null
+  waitUntil?: string | null
+  processing?: boolean | null
+  /**
+   * Used for concurrency control. Jobs with the same key are subject to exclusive/supersedes rules.
+   */
+  concurrencyKey?: string | null
+  meta?:
+    | {
+        [k: string]: unknown
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null
+  updatedAt: string
+  createdAt: string
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
@@ -456,6 +758,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media'
         value: number | Media
+      } | null)
+    | ({
+        relationTo: 'cities'
+        value: number | City
       } | null)
     | ({
         relationTo: 'events'
@@ -476,6 +782,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'saved-events'
         value: number | SavedEvent
+      } | null)
+    | ({
+        relationTo: 'oauth-connections'
+        value: number | OauthConnection
+      } | null)
+    | ({
+        relationTo: 'ingestion-records'
+        value: number | IngestionRecord
       } | null)
   globalSlug?: string | null
   user: {
@@ -528,6 +842,7 @@ export interface UsersSelect<T extends boolean = true> {
   lastName?: T
   avatar?: T
   roles?: T
+  assignedCities?: T
   updatedAt?: T
   createdAt?: T
   email?: T
@@ -554,6 +869,14 @@ export interface MediaSelect<T extends boolean = true> {
   caption?: T
   credit?: T
   tags?: T
+  source?:
+    | T
+    | {
+        sourceKey?: T
+        platform?: T
+        externalId?: T
+        sourceUrl?: T
+      }
   updatedAt?: T
   createdAt?: T
   url?: T
@@ -602,6 +925,20 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cities_select".
+ */
+export interface CitiesSelect<T extends boolean = true> {
+  name?: T
+  slug?: T
+  region?: T
+  country?: T
+  timezone?: T
+  active?: T
+  updatedAt?: T
+  createdAt?: T
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "events_select".
  */
 export interface EventsSelect<T extends boolean = true> {
@@ -616,6 +953,7 @@ export interface EventsSelect<T extends boolean = true> {
   isAllDay?: T
   timezone?: T
   venue?: T
+  city?: T
   website?: T
   categories?: T
   organizers?: T
@@ -627,6 +965,9 @@ export interface EventsSelect<T extends boolean = true> {
     | {
         source?: T
         externalId?: T
+        sourceKey?: T
+        externalUrl?: T
+        ingestionRecord?: T
         lastSyncedAt?: T
       }
   updatedAt?: T
@@ -640,6 +981,7 @@ export interface VenuesSelect<T extends boolean = true> {
   name?: T
   slug?: T
   description?: T
+  city?: T
   address?:
     | T
     | {
@@ -654,6 +996,16 @@ export interface VenuesSelect<T extends boolean = true> {
   phone?: T
   capacity?: T
   image?: T
+  instagram?:
+    | T
+    | {
+        username?: T
+        accountId?: T
+        monitoringEnabled?: T
+        lastCheckedAt?: T
+        status?: T
+        lastError?: T
+      }
   sync?:
     | T
     | {
@@ -713,11 +1065,101 @@ export interface SavedEventsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "oauth-connections_select".
+ */
+export interface OauthConnectionsSelect<T extends boolean = true> {
+  owner?: T
+  city?: T
+  label?: T
+  provider?: T
+  status?: T
+  externalAccountId?: T
+  calendarId?: T
+  calendarName?: T
+  grantedScopes?: T
+  encryptedCredentials?: T
+  encryptedOAuthState?: T
+  stateExpiresAt?: T
+  syncToken?: T
+  lastSyncedAt?: T
+  lastError?: T
+  updatedAt?: T
+  createdAt?: T
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ingestion-records_select".
+ */
+export interface IngestionRecordsSelect<T extends boolean = true> {
+  source?: T
+  sourceKey?: T
+  externalId?: T
+  canonicalUrl?: T
+  status?: T
+  city?: T
+  venue?: T
+  submittedBy?: T
+  connection?: T
+  linkedEvent?: T
+  duplicateCandidates?: T
+  normalizedPayload?: T
+  sourcePayload?: T
+  payloadHash?: T
+  confidence?: T
+  model?: T
+  extractionEvidence?: T
+  sourceUpdatedAt?: T
+  processedAt?: T
+  errors?:
+    | T
+    | {
+        field?: T
+        message?: T
+        id?: T
+      }
+  updatedAt?: T
+  createdAt?: T
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
   key?: T
   data?: T
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs_select".
+ */
+export interface PayloadJobsSelect<T extends boolean = true> {
+  input?: T
+  taskStatus?: T
+  completedAt?: T
+  totalTried?: T
+  hasError?: T
+  error?: T
+  log?:
+    | T
+    | {
+        executedAt?: T
+        completedAt?: T
+        taskSlug?: T
+        taskID?: T
+        input?: T
+        output?: T
+        state?: T
+        error?: T
+        id?: T
+      }
+  taskSlug?: T
+  queue?: T
+  waitUntil?: T
+  processing?: T
+  concurrencyKey?: T
+  meta?: T
+  updatedAt?: T
+  createdAt?: T
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -750,6 +1192,88 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T
   updatedAt?: T
   createdAt?: T
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs-stats".
+ */
+export interface PayloadJobsStat {
+  id: number
+  stats?:
+    | {
+        [k: string]: unknown
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null
+  updatedAt?: string | null
+  createdAt?: string | null
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs-stats_select".
+ */
+export interface PayloadJobsStatsSelect<T extends boolean = true> {
+  stats?: T
+  updatedAt?: T
+  createdAt?: T
+  globalType?: T
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSyncGoogleCalendar".
+ */
+export interface TaskSyncGoogleCalendar {
+  input: {
+    connectionId: number
+  }
+  output: {
+    seen: number
+    created: number
+    updated: number
+    review: number
+    failed: number
+  }
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPollInstagramVenue".
+ */
+export interface TaskPollInstagramVenue {
+  input: {
+    venueId: number
+  }
+  output: {
+    seen: number
+    created: number
+    review: number
+    skipped: number
+    failed: number
+  }
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPollGoogleCalendars".
+ */
+export interface TaskPollGoogleCalendars {
+  input?: unknown
+  output: {
+    attempted: number
+    failed: number
+  }
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPollInstagramVenues".
+ */
+export interface TaskPollInstagramVenues {
+  input?: unknown
+  output: {
+    attempted: number
+    failed: number
+  }
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

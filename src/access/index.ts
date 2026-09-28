@@ -1,4 +1,4 @@
-import type { Access, FieldAccess } from 'payload'
+import type { Access, FieldAccess, Where } from 'payload'
 
 /**
  * Access control: Only admins
@@ -13,6 +13,15 @@ export const isAdmin: Access = ({ req: { user } }) => {
 export const isEditorOrAdmin: Access = ({ req: { user } }) => {
   if (!user) return false
   return user.roles?.includes('admin') || user.roles?.includes('editor')
+}
+
+export const isAmbassadorOrEditor: Access = ({ req: { user } }) => {
+  if (!user) return false
+  return (
+    user.roles?.includes('admin') ||
+    user.roles?.includes('editor') ||
+    user.roles?.includes('ambassador')
+  )
 }
 
 /**
@@ -61,4 +70,52 @@ export const anyone: Access = () => true
 export const authenticatedOrPublished: Access = ({ req: { user } }) => {
   if (user) return true
   return { status: { equals: 'published' } }
+}
+
+function relationshipIDs(value: unknown): Array<number | string> {
+  if (!Array.isArray(value)) return []
+  return value
+    .map((item) => {
+      if (typeof item === 'number' || typeof item === 'string') return item
+      if (item && typeof item === 'object' && 'id' in item) {
+        const id = (item as { id?: unknown }).id
+        return typeof id === 'number' || typeof id === 'string' ? id : undefined
+      }
+      return undefined
+    })
+    .filter((id): id is number | string => id !== undefined)
+}
+
+export const eventReadAccess: Access = ({ req: { user } }) => {
+  const publishedOnly: Where = { status: { equals: 'published' } }
+  if (!user) return publishedOnly
+  if (user.roles?.includes('admin') || user.roles?.includes('editor')) return true
+
+  if (user.roles?.includes('ambassador')) {
+    const cityIDs = relationshipIDs(user.assignedCities)
+    const allowed: Where[] = [publishedOnly, { createdBy: { equals: user.id } }]
+    if (cityIDs.length > 0) allowed.push({ city: { in: cityIDs } })
+    return { or: allowed }
+  }
+
+  return publishedOnly
+}
+
+export const eventUpdateAccess: Access = ({ req: { user } }) => {
+  if (!user) return false
+  if (user.roles?.includes('admin') || user.roles?.includes('editor')) return true
+  if (!user.roles?.includes('ambassador')) return false
+
+  const cityIDs = relationshipIDs(user.assignedCities)
+  if (cityIDs.length === 0) return false
+  const constraints: Where[] = [
+    { createdBy: { equals: user.id } },
+    { city: { in: cityIDs } },
+    { status: { equals: 'draft' } },
+  ]
+  return { and: constraints }
+}
+
+export const editorFieldAccess: FieldAccess = ({ req: { user } }) => {
+  return Boolean(user?.roles?.includes('admin') || user?.roles?.includes('editor'))
 }

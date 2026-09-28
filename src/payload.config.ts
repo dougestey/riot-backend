@@ -12,6 +12,10 @@ import { Venues } from './collections/Venues'
 import { Categories } from './collections/Categories'
 import { Organizers } from './collections/Organizers'
 import { SavedEvents } from './collections/SavedEvents'
+import { Cities } from './collections/Cities'
+import { IngestionRecords } from './collections/IngestionRecords'
+import { OAuthConnections } from './collections/OAuthConnections'
+import { ingestionTasks } from './jobs/ingestion'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -35,7 +39,18 @@ export default buildConfig({
     },
   }),
 
-  collections: [Users, Media, Events, Venues, Categories, Organizers, SavedEvents],
+  collections: [
+    Users,
+    Media,
+    Cities,
+    Events,
+    Venues,
+    Categories,
+    Organizers,
+    SavedEvents,
+    OAuthConnections,
+    IngestionRecords,
+  ],
 
   // Admin
   admin: {
@@ -56,6 +71,25 @@ export default buildConfig({
   },
 
   sharp,
+
+  jobs: {
+    enableConcurrencyControl: true,
+    access: {
+      run: ({ req }) => Boolean(req.user?.roles?.includes('admin')),
+      queue: ({ req }) => Boolean(req.user?.roles?.includes('admin')),
+      cancel: ({ req }) => Boolean(req.user?.roles?.includes('admin')),
+    },
+    jobsCollectionOverrides: ({ defaultJobsCollection }) => ({
+      ...defaultJobsCollection,
+      access: {
+        read: ({ req }) => Boolean(req.user?.roles?.includes('admin')),
+        create: ({ req }) => Boolean(req.user?.roles?.includes('admin')),
+        update: ({ req }) => Boolean(req.user?.roles?.includes('admin')),
+        delete: ({ req }) => Boolean(req.user?.roles?.includes('admin')),
+      },
+    }),
+    tasks: ingestionTasks,
+  },
 
   plugins: [],
 })

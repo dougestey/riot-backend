@@ -16,6 +16,7 @@
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "import": "cross-env NODE_OPTIONS=--no-deprecation tsx src/scripts/importWordpressData.ts",
+    "jobs:run": "cross-env NODE_OPTIONS=--no-deprecation payload jobs:run --all-queues --limit=100 --handle-schedules",
     "lint": "cross-env NODE_OPTIONS=--no-deprecation next lint",
     "lint-staged": "lint-staged",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
@@ -33,14 +34,17 @@
     "@payloadcms/storage-s3": "^3.74.0",
     "@payloadcms/ui": "3.74.0",
     "cross-env": "^7.0.3",
+    "csv-parse": "^7.0.3",
     "dotenv": "16.4.7",
+    "fflate": "^0.8.3",
     "graphql": "^16.8.1",
     "next": "15.4.11",
-    "yaml": "^2.7.0",
+    "node-ical": "^0.26.1",
     "payload": "3.74.0",
     "react": "19.2.1",
     "react-dom": "19.2.1",
-    "sharp": "0.34.2"
+    "sharp": "0.34.2",
+    "yaml": "^2.7.0"
   },
   "devDependencies": {
     "@playwright/test": "1.56.1",
@@ -48,6 +52,7 @@
     "@types/node": "^22.5.4",
     "@types/react": "19.2.9",
     "@types/react-dom": "19.2.3",
+    "@types/swagger-ui-react": "^5.18.0",
     "@vitejs/plugin-react": "4.5.2",
     "eslint": "^9.16.0",
     "eslint-config-next": "15.4.11",
@@ -56,15 +61,15 @@
     "lint-staged": "^16.2.7",
     "playwright": "1.56.1",
     "playwright-core": "1.56.1",
-    "swagger-ui-react": "^5.18.2",
     "prettier": "^3.8.1",
+    "swagger-ui-react": "^5.18.2",
     "tsx": "^4.21.0",
     "typescript": "5.7.3",
     "vite-tsconfig-paths": "5.1.4",
     "vitest": "3.2.3"
   },
   "engines": {
-    "node": "^18.20.2 || >=20.9.0",
+    "node": ">=20.9.0",
     "pnpm": "^9 || ^10"
   },
   "pnpm": {
