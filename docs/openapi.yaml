@@ -19,6 +19,7 @@ tags:
   - name: SavedEvents
   - name: Auth
   - name: Webhooks
+  - name: SocialIngestion
 
 paths:
   /api/events:
@@ -349,6 +350,100 @@ paths:
         '422':
           description: Event upsert failed
 
+  /api/event-imports/preview:
+    post:
+      tags: [SocialIngestion]
+      summary: Preview an event file import
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, cityId]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                cityId:
+                  type: integer
+      responses:
+        '200':
+          description: Parsed events and validation errors
+
+  /api/event-imports:
+    post:
+      tags: [SocialIngestion]
+      summary: Import an ICS, Facebook JSON/ZIP, or RIOT CSV file as drafts
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file, cityId]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                cityId:
+                  type: integer
+      responses:
+        '200':
+          description: Import counts, record IDs, and row errors
+
+  /api/integrations/google/authorize:
+    post:
+      tags: [SocialIngestion]
+      summary: Start Google Calendar OAuth with PKCE
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Authorization URL and pending connection ID
+
+  /api/integrations/google/sync:
+    post:
+      tags: [SocialIngestion]
+      summary: Synchronize an owned Google Calendar connection
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Synchronization counts
+
+  /api/integrations/instagram/poll:
+    post:
+      tags: [SocialIngestion]
+      summary: Poll and analyze one monitored venue
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Polling and extraction counts
+
+  /api/integrations/facebook/feasibility:
+    get:
+      tags: [SocialIngestion]
+      summary: Report whether direct Facebook Events is enabled
+      responses:
+        '200':
+          description: Feature gate status
+    post:
+      tags: [SocialIngestion]
+      summary: Run the admin-only production Facebook Event API probe
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Partner access probe succeeded
+        '424':
+          description: Partner access is absent or not configured
+
 components:
   securitySchemes:
     bearerAuth:
@@ -422,7 +517,17 @@ components:
           properties:
             source:
               type: string
-              enum: [manual, wordpress]
+              enum:
+                [
+                  manual,
+                  wordpress,
+                  facebook,
+                  google-calendar,
+                  ical,
+                  facebook-export,
+                  csv,
+                  instagram,
+                ]
               nullable: true
             externalId:
               type: string

@@ -1,6 +1,12 @@
-import type { CollectionConfig } from 'payload'
+import { APIError, type CollectionConfig } from 'payload'
 
-import { anyone, authenticatedOrPublished, isEditorOrAdmin } from '../access'
+import {
+  editorFieldAccess,
+  eventReadAccess,
+  eventUpdateAccess,
+  isAmbassadorOrEditor,
+  isEditorOrAdmin,
+} from '../access'
 
 export const Events: CollectionConfig = {
   slug: 'events',
@@ -11,9 +17,9 @@ export const Events: CollectionConfig = {
     listSearchableFields: ['title', 'description', 'venue'],
   },
   access: {
-    read: authenticatedOrPublished,
-    create: isEditorOrAdmin,
-    update: isEditorOrAdmin,
+    read: eventReadAccess,
+    create: isAmbassadorOrEditor,
+    update: eventUpdateAccess,
     delete: isEditorOrAdmin,
   },
   fields: [
@@ -126,6 +132,15 @@ export const Events: CollectionConfig = {
               },
             },
             {
+              name: 'city',
+              type: 'relationship',
+              relationTo: 'cities',
+              index: true,
+              admin: {
+                description: 'Normalized city used for authorization and discovery',
+              },
+            },
+            {
               name: 'website',
               type: 'text',
               admin: {
@@ -165,6 +180,9 @@ export const Events: CollectionConfig = {
       admin: {
         position: 'sidebar',
       },
+      access: {
+        update: editorFieldAccess,
+      },
     },
     {
       name: 'featured',
@@ -173,6 +191,9 @@ export const Events: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description: 'Feature this event on the homepage',
+      },
+      access: {
+        update: editorFieldAccess,
       },
     },
     {
@@ -200,15 +221,44 @@ export const Events: CollectionConfig = {
           options: [
             { label: 'Manual', value: 'manual' },
             { label: 'WordPress', value: 'wordpress' },
+            { label: 'Facebook', value: 'facebook' },
+            { label: 'Google Calendar', value: 'google-calendar' },
+            { label: 'iCalendar', value: 'ical' },
+            { label: 'Facebook Export', value: 'facebook-export' },
+            { label: 'CSV', value: 'csv' },
+            { label: 'Instagram', value: 'instagram' },
           ],
+          access: { update: editorFieldAccess },
         },
         {
           name: 'externalId',
           type: 'text',
           index: true,
           admin: {
-            description: 'WordPress event ID',
+            description: 'ID assigned by the external source',
           },
+          access: { update: editorFieldAccess },
+        },
+        {
+          name: 'sourceKey',
+          type: 'text',
+          unique: true,
+          index: true,
+          admin: {
+            description: 'Namespaced source identity',
+          },
+          access: { update: editorFieldAccess },
+        },
+        {
+          name: 'externalUrl',
+          type: 'text',
+          access: { update: editorFieldAccess },
+        },
+        {
+          name: 'ingestionRecord',
+          type: 'relationship',
+          relationTo: 'ingestion-records',
+          access: { update: editorFieldAccess },
         },
         {
           name: 'lastSyncedAt',
@@ -218,16 +268,38 @@ export const Events: CollectionConfig = {
               pickerAppearance: 'dayAndTime',
             },
           },
+          access: { update: editorFieldAccess },
         },
       ],
     },
   ],
   hooks: {
     beforeChange: [
-      async ({ data, req, operation }) => {
+      async ({ data, req, operation, originalDoc }) => {
         // Auto-set createdBy on create
         if (operation === 'create' && req.user) {
           data.createdBy = req.user.id
+        }
+
+        if (req.user?.roles?.includes('ambassador')) {
+          const assignedCities = Array.isArray(req.user.assignedCities)
+            ? req.user.assignedCities.map((city) =>
+                typeof city === 'object' && city ? city.id : city,
+              )
+            : []
+          const requestedCity = data.city ?? originalDoc?.city
+          const city =
+            typeof requestedCity === 'object' && requestedCity ? requestedCity.id : requestedCity
+
+          if (!city || !assignedCities.map(String).includes(String(city))) {
+            throw new APIError('Ambassadors may only submit events in assigned cities', 403)
+          }
+
+          data.status = 'draft'
+          data.featured = false
+          if (operation === 'create') {
+            data.sync = { source: 'manual' }
+          }
         }
         return data
       },

@@ -46,6 +46,7 @@ export const Users: CollectionConfig = {
       options: [
         { label: 'Admin', value: 'admin' },
         { label: 'Editor', value: 'editor' },
+        { label: 'Ambassador', value: 'ambassador' },
         { label: 'Attendee', value: 'attendee' },
       ],
       access: {
@@ -54,6 +55,19 @@ export const Users: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description: 'User roles determine access permissions',
+      },
+    },
+    {
+      name: 'assignedCities',
+      type: 'relationship',
+      relationTo: 'cities',
+      hasMany: true,
+      access: {
+        update: adminFieldAccess,
+      },
+      admin: {
+        position: 'sidebar',
+        description: 'Cities in which this user may submit draft events',
       },
     },
   ],

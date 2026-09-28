@@ -5,6 +5,7 @@ const nextConfig = {
   // Speeds up production build time by ignoring errors
   eslint: { ignoreDuringBuilds: true },
   typescript: { ignoreBuildErrors: true },
+  serverExternalPackages: ['node-ical'],
 
   // Your Next.js config here
   webpack: (webpackConfig) => {

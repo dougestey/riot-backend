@@ -69,5 +69,33 @@ export const Media: CollectionConfig = {
         description: 'Tags for organization and AI tagging',
       },
     },
+    {
+      name: 'source',
+      type: 'group',
+      admin: {
+        description: 'External media provenance',
+      },
+      fields: [
+        {
+          name: 'sourceKey',
+          type: 'text',
+          unique: true,
+          index: true,
+          admin: { readOnly: true },
+        },
+        {
+          name: 'platform',
+          type: 'select',
+          options: [
+            { label: 'Instagram', value: 'instagram' },
+            { label: 'Facebook', value: 'facebook' },
+            { label: 'WordPress', value: 'wordpress' },
+          ],
+          admin: { readOnly: true },
+        },
+        { name: 'externalId', type: 'text', index: true, admin: { readOnly: true } },
+        { name: 'sourceUrl', type: 'text', admin: { readOnly: true } },
+      ],
+    },
   ],
 }
